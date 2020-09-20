@@ -1,20 +1,14 @@
 import requests
 import csv
-from urllib.request import urlopen as uReq
-from bs4 import BeautifulSoup as soup
+from bs4 import BeautifulSoup as Soup
 
 fda_url = "https://www.accessdata.fda.gov/scripts/cdrh/cfdocs/cfcfr/CFRSearch.cfm"
-
-# opening a connection
-uClient = uReq(fda_url)
-page_html = uClient.read();
-uClient.close()
-
 filename = "fds_records.csv"
 with open(filename, 'w') as csv_file:
-    csvwriter = csv.writer(csv_file)
+    csv_writer = csv.writer(csv_file)
     # html parsing to get all CFR title options
-    page_soup = soup(page_html, "html.parser")
+    response = requests.get(fda_url)
+    page_soup = Soup(response.text, "html.parser")
     options = page_soup.find("select")
     option = options.contents[1]
     # contains all the child pages
@@ -30,17 +24,16 @@ with open(filename, 'w') as csv_file:
 
     # Iterate for each post
     for part in post_list:
-        post_url = "https://www.accessdata.fda.gov/scripts/cdrh/cfdocs/cfcfr/CFRSearch.cfm"
         data = {"CFRPart": part, "Search": "search"}
-        response = requests.post(post_url, data)
-        page_soup = soup(response.text, "html.parser")
+        response = requests.post(fda_url, data)
+        page_soup = Soup(response.text, "html.parser")
         column1 = page_soup.table.tr.td.table.findAll("tr")[3].div.find("a").text
         items = page_soup.table.tr.td.table.findAll("tr")[3].findAll("td")[0].findAll("strong")
         for item in items:
             if item.a is not None:
                 data = item.a['href'].split('?')[1]
-                response = requests.get(post_url, data)
-                page_soup = soup(response.text, "html.parser")
+                response = requests.get(fda_url, data)
+                page_soup = Soup(response.text, "html.parser")
                 # all_rows = page_soup.table.tr.td.table.findAll("tr")
                 all_rows = list(page_soup.table.tr.td.table.children)
                 row_counter = 0
@@ -61,4 +54,4 @@ with open(filename, 'w') as csv_file:
                         column4 = " ".join(text_arr[1:][1:])
                         column5 = " ".join(list(row.findAll("table")[1].strings)).strip().replace("\n", "")
                         fields = [column1, column2, column3, column4, column5]
-                        csvwriter.writerow(fields)
+                        csv_writer.writerow(fields)
