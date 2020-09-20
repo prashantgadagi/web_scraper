@@ -2,6 +2,7 @@ import requests
 import csv
 from bs4 import BeautifulSoup as Soup
 
+csv_content_length = 32750
 fda_url = "https://www.accessdata.fda.gov/scripts/cdrh/cfdocs/cfcfr/CFRSearch.cfm"
 filename = "fda_records.csv"
 with open(filename, 'w') as csv_file:
@@ -52,6 +53,6 @@ with open(filename, 'w') as csv_file:
                         column3 = "\"" + text_arr[1:][0] + "\""
                         column4 = "\"" + " ".join(text_arr[1:][1:]) + "\""
                         cntnt = " ".join(list(row.findAll("table")[1].strings)).strip().replace("\n", "")
-                        column5 = "\"" + (cntnt[:32760] + '...') if len(cntnt) > 32767 else cntnt + "\""
+                        column5 = "\"" + (cntnt[:csv_content_length] + '...') if len(cntnt) > csv_content_length else cntnt + "\""
                         fields = [column1, column2, column3, column4, column5]
                         csv_writer.writerow(fields)
