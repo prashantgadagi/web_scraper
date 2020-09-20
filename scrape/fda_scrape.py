@@ -3,7 +3,7 @@ import csv
 from bs4 import BeautifulSoup as Soup
 
 fda_url = "https://www.accessdata.fda.gov/scripts/cdrh/cfdocs/cfcfr/CFRSearch.cfm"
-filename = "fds_records.csv"
+filename = "fda_records.csv"
 with open(filename, 'w') as csv_file:
     csv_writer = csv.writer(csv_file)
     # html parsing to get all CFR title options
@@ -12,18 +12,18 @@ with open(filename, 'w') as csv_file:
     options = page_soup.find("select")
     option = options.contents[1]
     # contains all the child pages
-    post_list = []
+    part_list = []
     while option is not None:
         val = int(option.attrs['value'])
         if val != 0:
-            post_list.append(val)
+            part_list.append(val)
         if len(option.contents) > 1:
             option = option.contents[1]
         else:
             option = None
 
     # Iterate for each post
-    for part in post_list:
+    for part in part_list:
         data = {"CFRPart": part, "Search": "search"}
         response = requests.post(fda_url, data)
         page_soup = Soup(response.text, "html.parser")
@@ -52,6 +52,6 @@ with open(filename, 'w') as csv_file:
                         text_arr = table1.tr.td.text.strip().split(' ')
                         column3 = text_arr[1:][0]
                         column4 = " ".join(text_arr[1:][1:])
-                        column5 = " ".join(list(row.findAll("table")[1].strings)).strip().replace("\n", "")
+                        column5 = "\"" + " ".join(list(row.findAll("table")[1].strings)).strip().replace("\n", "") + "\""
                         fields = [column1, column2, column3, column4, column5]
                         csv_writer.writerow(fields)
