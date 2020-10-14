@@ -30,29 +30,48 @@ with open(filename, 'w') as csv_file:
         page_soup = Soup(response.text, "html.parser")
         column1 = "\"" + page_soup.table.tr.td.table.findAll("tr")[3].div.find("a").text + "\""
         items = page_soup.table.tr.td.table.findAll("tr")[3].findAll("td")[0].findAll("strong")
-        for item in items:
-            if item.a is not None:
-                data = item.a['href'].split('?')[1]
-                response = requests.get(fda_url, data)
-                page_soup = Soup(response.text, "html.parser")
-                all_rows = list(page_soup.table.tr.td.table.children)
-                row_counter = 0
-                while row_counter < len(all_rows):
-                    if all_rows[row_counter] == '\n':
+        if not items:
+            items = page_soup.table.tr.td.table.findAll("tr")[3].findAll("td")[0].findAll("p")
+            for item in items:
+                if item.a is not None:
+                    data = item.a['href'].split('?')[1]
+                    response = requests.get(fda_url, data)
+                    page_soup = Soup(response.text, "html.parser")
+                    all_rows = list(page_soup.table.tr.td.table.children)
+                    column2 = ""
+                    row = all_rows[3]
+                    text_arr = row.findAll("table")[6].td.text.strip().split(" ")
+                    column3 = "\"" + text_arr[1:][0] + "\""
+                    column4 = "\"" + " ".join(text_arr[1:][1:]) + "\""
+                    cntnt = " ".join(list(row.findAll("table")[7].strings)).strip().replace("\n", "")
+                    column5 = "\"" + (cntnt[:csv_content_length] + '...') if len(
+                        cntnt) > csv_content_length else cntnt + "\""
+                    fields = [column1, column2, column3, column4, column5]
+                    csv_writer.writerow(fields)
+        else:
+            for item in items:
+                if item.a is not None:
+                    data = item.a['href'].split('?')[1]
+                    response = requests.get(fda_url, data)
+                    page_soup = Soup(response.text, "html.parser")
+                    all_rows = list(page_soup.table.tr.td.table.children)
+                    row_counter = 0
+                    while row_counter < len(all_rows):
+                        if all_rows[row_counter] == '\n':
+                            row_counter += 1
+                            continue
+                        if all_rows[row_counter].strong is not None:
+                            break
                         row_counter += 1
-                        continue
-                    if all_rows[row_counter].strong is not None:
-                        break
-                    row_counter += 1
-                column2 = "\"" + all_rows[row_counter].strong.text.strip().split('--')[1] + "\""
-                for row_num in range(row_counter, len(all_rows)):
-                    row = all_rows[row_num]
-                    if row is not None and row != '\n' and len(row.findAll("table")) >= 2:
-                        table1 = row.findAll("table")[0]
-                        text_arr = table1.tr.td.text.strip().split(' ')
-                        column3 = "\"" + text_arr[1:][0] + "\""
-                        column4 = "\"" + " ".join(text_arr[1:][1:]) + "\""
-                        cntnt = " ".join(list(row.findAll("table")[1].strings)).strip().replace("\n", "")
-                        column5 = "\"" + (cntnt[:csv_content_length] + '...') if len(cntnt) > csv_content_length else cntnt + "\""
-                        fields = [column1, column2, column3, column4, column5]
-                        csv_writer.writerow(fields)
+                    column2 = "\"" + all_rows[row_counter].strong.text.strip().split('--')[1] + "\""
+                    for row_num in range(row_counter, len(all_rows)):
+                        row = all_rows[row_num]
+                        if row is not None and row != '\n' and len(row.findAll("table")) >= 2:
+                            table1 = row.findAll("table")[0]
+                            text_arr = table1.tr.td.text.strip().split(' ')
+                            column3 = "\"" + text_arr[1:][0] + "\""
+                            column4 = "\"" + " ".join(text_arr[1:][1:]) + "\""
+                            cntnt = " ".join(list(row.findAll("table")[1].strings)).strip().replace("\n", "")
+                            column5 = "\"" + (cntnt[:csv_content_length] + '...') if len(cntnt) > csv_content_length else cntnt + "\""
+                            fields = [column1, column2, column3, column4, column5]
+                            csv_writer.writerow(fields)
